@@ -786,10 +786,13 @@ def run_3d_to_3d(k3d_wrapper, input_mesh_path, prompt=None, use_controlnet=True,
             lora_scale=1.0,
             redux_hparam=redux_hparam
         )
-
+    
+    torch.cuda.empty_cache()
+    
     # recon from 3D Bundle image
     recon_mesh_path = k3d_wrapper.reconstruct_3d_bundle_image(gen_3d_bundle_image, save_intermediate_results=False,
                                                               isomer_radius=4.15, reconstruction_stage2_steps=50)
+    torch.cuda.empty_cache()
 
     return gen_save_path, recon_mesh_path
 
