@@ -748,6 +748,8 @@ def run_3d_to_3d(k3d_wrapper, input_mesh_path, prompt=None, use_controlnet=True,
     reference_3d_bundle_image = render_3d_bundle_image_from_mesh(input_mesh_path)
     torchvision.utils.save_image(reference_3d_bundle_image, os.path.join(TMP_DIR, f'{k3d_wrapper.uuid}_reference_3d_bundle_image.png'))
 
+    torch.cuda.empty_cache()
+
     if prompt is None:
         caption = k3d_wrapper.get_image_caption(reference_3d_bundle_image)
     else:
@@ -765,6 +767,8 @@ def run_3d_to_3d(k3d_wrapper, input_mesh_path, prompt=None, use_controlnet=True,
         control_guidance_start = [0.0]
         control_guidance_end = [0.2]
         controlnet_conditioning_scale = [0.1]
+
+        torch.cuda.empty_cache()
 
         gen_3d_bundle_image, gen_save_path = k3d_wrapper.generate_3d_bundle_image_controlnet(
             prompt=caption,
@@ -789,6 +793,7 @@ def run_3d_to_3d(k3d_wrapper, input_mesh_path, prompt=None, use_controlnet=True,
     
     torch.cuda.empty_cache()
     
+    logger.warning(f"GPU memory allocated after load flux model on {flux_device}: {torch.cuda.memory_allocated(device=flux_device) / 1024**3} GB")
     # recon from 3D Bundle image
     recon_mesh_path = k3d_wrapper.reconstruct_3d_bundle_image(gen_3d_bundle_image, save_intermediate_results=False,
                                                               isomer_radius=4.15, reconstruction_stage2_steps=50)
