@@ -88,7 +88,7 @@ def init_wrapper_from_config(config_path):
     if not os.path.exists(flux_lora_pth):
         flux_lora_pth = hf_hub_download(repo_id="LTT/Kiss3DGen", filename="rgb_normal.safetensors", repo_type="model")
     flux_pipe.load_lora_weights(flux_lora_pth)
-    flux_pipe.to(device=flux_device)
+    #flux_pipe.to(device=flux_device)
 
     # load redux model
     flux_redux_pipe = None
@@ -99,7 +99,7 @@ def init_wrapper_from_config(config_path):
         flux_redux_pipe.tokenizer = flux_pipe.tokenizer
         flux_redux_pipe.tokenizer_2 = flux_pipe.tokenizer_2
 
-        flux_redux_pipe.to(device=flux_device)
+        #flux_redux_pipe.to(device=flux_device)
 
     logger.warning(f"GPU memory allocated after load flux model on {flux_device}: {torch.cuda.memory_allocated(device=flux_device) / 1024**3} GB")
 
@@ -121,7 +121,7 @@ def init_wrapper_from_config(config_path):
     state_dict = torch.load(unet_ckpt_path, map_location='cpu')
     multiview_pipeline.unet.load_state_dict(state_dict, strict=True)
 
-    multiview_pipeline.to(multiview_device)
+    #multiview_pipeline.to(multiview_device)
     logger.warning(f"GPU memory allocated after load multiview model on {multiview_device}: {torch.cuda.memory_allocated(device=multiview_device) / 1024**3} GB")
 
     # load caption model
@@ -143,7 +143,7 @@ def init_wrapper_from_config(config_path):
     state_dict = torch.load(model_ckpt_path, map_location='cpu')['state_dict']
     state_dict = {k[14:]: v for k, v in state_dict.items() if k.startswith('lrm_generator.')}
     recon_model.load_state_dict(state_dict, strict=True)
-    recon_model.to(recon_device)
+    #recon_model.to(recon_device)
     recon_model.init_flexicubes_geometry(recon_device, fovy=50.0)
     recon_model.eval()
     logger.warning(f"GPU memory allocated after load reconstruction model on {recon_device}: {torch.cuda.memory_allocated(device=recon_device) / 1024**3} GB")
@@ -154,7 +154,7 @@ def init_wrapper_from_config(config_path):
         logger.info('==> Loading LLM ...')
         llm_device = llm_configs.get('device', 'cpu')
         llm, llm_tokenizer = load_llm_model(llm_configs['base_model'])
-        llm.to(llm_device)
+        #llm.to(llm_device)
         logger.warning(f"GPU memory allocated after load llm model on {llm_device}: {torch.cuda.memory_allocated(device=llm_device) / 1024**3} GB")
     else:
         llm, llm_tokenizer = None, None
@@ -363,6 +363,8 @@ class kiss3d_wrapper(object):
         } # for https://huggingface.co/InstantX/FLUX.1-dev-Controlnet-Union only
 
         flux_device = self.config['flux'].get('device', 'cpu')
+        self.flux_pipeline.to(flux_device)
+
         seed = seed or self.config['flux'].get('seed', 0)
         num_inference_steps = num_inference_steps or self.config['flux'].get('num_inference_steps', 20)
 
@@ -397,6 +399,8 @@ class kiss3d_wrapper(object):
             }
             redux_hparam_.update(redux_hparam)
 
+            self.flux_redux_pipeline.to(flux_device)
+
             with self.context():
                 redux_output = self.flux_redux_pipeline(**redux_hparam_)
     
@@ -430,6 +434,12 @@ class kiss3d_wrapper(object):
             torchvision.utils.save_image(gen_3d_bundle_image_, save_path)
             logger.info(f"Save generated 3D bundle image to {save_path}")
             return gen_3d_bundle_image_, save_path
+
+        self.flux_pipeline.to('cpu')
+        if self.flux_redux_pipeline is not None:
+            self.flux_redux_pipeline.to('cpu')
+
+        torch.cuda.empty_cache()
 
         return gen_3d_bundle_image_
 
@@ -550,6 +560,7 @@ class kiss3d_wrapper(object):
         image: torch.Tensor, range [0., 1.], (3, 1024, 2048)
         """
         recon_device = self.config['reconstruction'].get('device', 'cpu')
+        self.recon_model.to(recon_device)
 
         # split rgb and normal
         images = rearrange(image, 'c (n h) (m w) -> (n m) c h w', n=2, m=4) # (3, 1024, 2048) -> (8, 3, 512, 512)
@@ -572,6 +583,9 @@ class kiss3d_wrapper(object):
             torchvision.utils.save_image(recon_3D_bundle_image, os.path.join(TMP_DIR, f'{self.uuid}_lrm_recon_3d_bundle_image.png'))
 
         recon_mesh_paths = [os.path.join(TMP_DIR, f"{self.uuid}_isomer_recon_mesh.glb"), os.path.join(TMP_DIR, f"{self.uuid}_isomer_recon_mesh.obj")]
+
+        self.recon_model.to('cpu')
+        torch.cuda.empty_cache()
         
         return isomer_reconstruct(rgb_multi_view=rgb_multi_view,
                                   normal_multi_view=normal_multi_view,
@@ -768,7 +782,6 @@ def run_3d_to_3d(k3d_wrapper, input_mesh_path, prompt=None, use_controlnet=True,
         control_guidance_end = [0.2]
         controlnet_conditioning_scale = [0.1]
 
-        torch.cuda.empty_cache()
 
         gen_3d_bundle_image, gen_save_path = k3d_wrapper.generate_3d_bundle_image_controlnet(
             prompt=caption,
@@ -791,13 +804,10 @@ def run_3d_to_3d(k3d_wrapper, input_mesh_path, prompt=None, use_controlnet=True,
             redux_hparam=redux_hparam
         )
     
-    torch.cuda.empty_cache()
-    
     logger.warning(f"GPU memory allocated : {torch.cuda.memory_allocated() / 1024**3} GB")
     # recon from 3D Bundle image
     recon_mesh_path = k3d_wrapper.reconstruct_3d_bundle_image(gen_3d_bundle_image, save_intermediate_results=False,
                                                               isomer_radius=4.15, reconstruction_stage2_steps=50)
-    torch.cuda.empty_cache()
 
     return gen_save_path, recon_mesh_path
 
