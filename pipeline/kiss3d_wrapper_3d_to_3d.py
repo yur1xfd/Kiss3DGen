@@ -88,7 +88,7 @@ def init_wrapper_from_config(config_path):
     if not os.path.exists(flux_lora_pth):
         flux_lora_pth = hf_hub_download(repo_id="LTT/Kiss3DGen", filename="rgb_normal.safetensors", repo_type="model")
     flux_pipe.load_lora_weights(flux_lora_pth)
-    #flux_pipe.to(device=flux_device)
+    flux_pipe.to(device=flux_device)
 
     # load redux model
     flux_redux_pipe = None
@@ -99,7 +99,7 @@ def init_wrapper_from_config(config_path):
         flux_redux_pipe.tokenizer = flux_pipe.tokenizer
         flux_redux_pipe.tokenizer_2 = flux_pipe.tokenizer_2
 
-        #flux_redux_pipe.to(device=flux_device)
+        flux_redux_pipe.to(device=flux_device)
 
     logger.warning(f"GPU memory allocated after load flux model on {flux_device}: {torch.cuda.memory_allocated(device=flux_device) / 1024**3} GB")
 
