@@ -99,7 +99,7 @@ def init_wrapper_from_config(config_path):
         flux_redux_pipe.tokenizer = flux_pipe.tokenizer
         flux_redux_pipe.tokenizer_2 = flux_pipe.tokenizer_2
 
-        flux_redux_pipe.to(device=flux_device)
+        #flux_redux_pipe.to(device=flux_device)
 
     logger.warning(f"GPU memory allocated after load flux model on {flux_device}: {torch.cuda.memory_allocated(device=flux_device) / 1024**3} GB")
 
@@ -128,7 +128,7 @@ def init_wrapper_from_config(config_path):
     logger.info('==> Loading caption model ...')
     caption_device = config_['caption'].get('device', 'cpu')
     caption_model = AutoModelForCausalLM.from_pretrained(config_['caption']['base_model'], \
-                    torch_dtype=torch.bfloat16, trust_remote_code=True).to(caption_device)
+                    torch_dtype=torch.bfloat16, trust_remote_code=True) #   .to(caption_device)
     caption_processor = AutoProcessor.from_pretrained(config_['caption']['base_model'], trust_remote_code=True)
     logger.warning(f"GPU memory allocated after load caption model on {caption_device}: {torch.cuda.memory_allocated(device=caption_device) / 1024**3} GB")
 
