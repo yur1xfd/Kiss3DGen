@@ -127,9 +127,11 @@ def init_wrapper_from_config(config_path):
     # load caption model
     logger.info('==> Loading caption model ...')
     caption_device = config_['caption'].get('device', 'cpu')
-    caption_model = AutoModelForCausalLM.from_pretrained(config_['caption']['base_model'], \
-                    torch_dtype=torch.bfloat16, trust_remote_code=True) #   .to(caption_device)
-    caption_processor = AutoProcessor.from_pretrained(config_['caption']['base_model'], trust_remote_code=True)
+    #caption_model = AutoModelForCausalLM.from_pretrained(config_['caption']['base_model'], \
+    #                torch_dtype=torch.bfloat16, trust_remote_code=True) #   .to(caption_device)
+    #caption_processor = AutoProcessor.from_pretrained(config_['caption']['base_model'], trust_remote_code=True)
+    caption_model = None
+    caption_processor = None
     logger.warning(f"GPU memory allocated after load caption model on {caption_device}: {torch.cuda.memory_allocated(device=caption_device) / 1024**3} GB")
 
     # load reconstruction model
@@ -259,7 +261,9 @@ class kiss3d_wrapper(object):
 
     def get_detailed_prompt(self, prompt, seed=None):
         if self.llm_model is not None:
+            self.llm_model.to('cuda')
             detailed_prompt = get_llm_response(self.llm_model, self.llm_tokenizer, prompt, seed=seed)
+            self.llm_model.to('cpu')
 
             logger.info(f"LLM refined prompt result: \"{detailed_prompt}\"")
             return detailed_prompt
@@ -769,6 +773,7 @@ def run_3d_to_3d(k3d_wrapper, input_mesh_path, prompt=None, use_controlnet=True,
     else:
         if refine_prompt:
             caption = k3d_wrapper.get_detailed_prompt(prompt)
+            torch.cuda.empty_cache()
         else:
             caption = prompt
 
@@ -808,7 +813,8 @@ def run_3d_to_3d(k3d_wrapper, input_mesh_path, prompt=None, use_controlnet=True,
     # recon from 3D Bundle image
     recon_mesh_path = k3d_wrapper.reconstruct_3d_bundle_image(gen_3d_bundle_image, save_intermediate_results=False,
                                                               isomer_radius=4.15, reconstruction_stage2_steps=50)
-
+    torch.cuda.empty_cache()
+    
     return gen_save_path, recon_mesh_path
 
 

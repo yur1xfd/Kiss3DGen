@@ -12,11 +12,11 @@ if __name__ == "__main__":
 
     save_dir = '3d_to_3d'
 
-    shutil.rmtree(os.path.join(OUT_DIR, save_dir), ignore_errors=True)
+    #shutil.rmtree(os.path.join(OUT_DIR, save_dir), ignore_errors=True)
     os.makedirs(os.path.join(OUT_DIR, save_dir), exist_ok=True)
 
     use_controlnet = True
-    refine_prompt = False
+    refine_prompt = True
 
     #prompts = open('./examples/enhancement/prompts.txt', 'r').readlines()
     prompts = open('./examples/enhancement/prompts_edit.txt', 'r').readlines()
