@@ -126,7 +126,7 @@ def init_wrapper_from_config(config_path):
 
     # load caption model
     logger.info('==> Loading caption model ...')
-    #caption_device = config_['caption'].get('device', 'cpu')
+    caption_device = config_['caption'].get('device', 'cpu')
     #caption_model = AutoModelForCausalLM.from_pretrained(config_['caption']['base_model'], \
     #                torch_dtype=torch.bfloat16, trust_remote_code=True).to(caption_device)
     #caption_processor = AutoProcessor.from_pretrained(config_['caption']['base_model'], trust_remote_code=True)
