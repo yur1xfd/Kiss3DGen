@@ -1,0 +1,15 @@
+ant_animal; a crab animal
+bicycle; a motorcycle
+bird_animal; a dinosaur animal
+car; a carriage
+dwarf; a minotaur
+gopher_animal; a kangaroo animal
+horse_animal; a horse skeleton
+animal; a lego animal
+magnolia_tree; a sakura tree
+space_marine; a ww2 soldier
+mermaid; a seahorse
+man_standing; a robot standing
+atakebune_ship; a modern yacht
+gothic_cathedral; a hindu temple
+chair; a gothic throne, royal
