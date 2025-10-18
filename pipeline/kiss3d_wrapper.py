@@ -554,6 +554,7 @@ class kiss3d_wrapper(object):
         image: torch.Tensor, range [0., 1.], (3, 1024, 2048)
         """
         recon_device = self.config['reconstruction'].get('device', 'cpu')
+        self.recon_model.to(recon_device)
 
         # split rgb and normal
         images = rearrange(image, 'c (n h) (m w) -> (n m) c h w', n=2, m=4) # (3, 1024, 2048) -> (8, 3, 512, 512)
@@ -570,7 +571,11 @@ class kiss3d_wrapper(object):
                             input_camera_type='kiss3d', render_3d_bundle_image=save_intermediate_results,
                             render_azimuths=[0, 90, 180, 270],
                             render_radius=lrm_render_radius)
+
         print(f'lrm_reconstruct time: {time.time() - end}')
+        self.recon_model.to('cpu')
+        torch.cuda.empty_cache()
+
         if save_intermediate_results:
             recon_3D_bundle_image = torchvision.utils.make_grid(torch.cat([lrm_multi_view_rgb.cpu(), (lrm_multi_view_normals.cpu() + 1) / 2], dim=0), nrow=4, padding=0).unsqueeze(0) # range [0, 1]        
             torchvision.utils.save_image(recon_3D_bundle_image, os.path.join(TMP_DIR, f'{self.uuid}_lrm_recon_3d_bundle_image.png'))
@@ -606,6 +611,7 @@ def run_text_to_3d(k3d_wrapper,
     logger.info(f"Input prompt: \"{prompt}\"")
     
     prompt = k3d_wrapper.get_detailed_prompt(prompt)
+    torch.cuda.empty_cache()
     end = time.time()
     gen_3d_bundle_image, gen_save_path = k3d_wrapper.generate_3d_bundle_image_text(prompt, 
                                                                                    image=init_image, 
@@ -615,7 +621,8 @@ def run_text_to_3d(k3d_wrapper,
     # recon from 3D Bundle image
     recon_mesh_path = k3d_wrapper.reconstruct_3d_bundle_image(gen_3d_bundle_image, save_intermediate_results=False,
                                                               isomer_radius=4.2, reconstruction_stage2_steps=50)
-
+    torch.cuda.empty_cache()
+    
     return gen_save_path, recon_mesh_path
 
 def image2mesh_preprocess(k3d_wrapper, input_image_, seed, use_mv_rgb=True):
