@@ -7,23 +7,25 @@ if __name__ == "__main__":
     os.system(f'rm -rf {TMP_DIR}/*')
     k3d_wrapper = init_wrapper_from_config('./pipeline/pipeline_config/default.yaml')
 
-    prompts = [
-    "ant animal", "crab animal",
-    "bicycle", "motorcycle",
-    "bird animal", "dinosaur animal",
-    "car", "carriage",
-    "dwarf", "minotaur",
-    "gopher animal", "kangaroo animal",
-    "horse animal", "horse skeleton",
-    "animal", "lego animal",
-    "magnolia tree", "sakura tree",
-    "space marine", "ww2 soldier",
-    "mermaid", "seahorse",
-    "man standing", "robot standing",
-    "atakebune ship", "modern yacht",
-    "gothic cathedral", "hindu temple",
-    "chair", "gothic throne, royal"
-    ]
+    #prompts = [
+    #"ant animal", "crab animal",
+    #"bicycle", "motorcycle",
+    #"bird animal", "dinosaur animal",
+    #"car", "carriage",
+    #"dwarf", "minotaur",
+    #"gopher animal", "kangaroo animal",
+    #"horse animal", "horse skeleton",
+    #"animal", "lego animal",
+    #"magnolia tree", "sakura tree",
+    #"space marine", "ww2 soldier",
+    #"mermaid", "seahorse",
+    #"man standing", "robot standing",
+    #"atakebune ship", "modern yacht",
+    #"gothic cathedral", "hindu temple",
+    #"chair", "gothic throne, royal"
+    #]
+
+    prompts = ['car', 'dinosaur animal']
 
     for prompt in prompts:
     
