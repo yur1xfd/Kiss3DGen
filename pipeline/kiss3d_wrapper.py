@@ -99,7 +99,7 @@ def init_wrapper_from_config(config_path):
         flux_redux_pipe.tokenizer = flux_pipe.tokenizer
         flux_redux_pipe.tokenizer_2 = flux_pipe.tokenizer_2
 
-        flux_redux_pipe.to(device=flux_device)
+        #flux_redux_pipe.to(device=flux_device)
 
     logger.warning(f"GPU memory allocated after load flux model on {flux_device}: {torch.cuda.memory_allocated(device=flux_device) / 1024**3} GB")
 
@@ -121,15 +121,17 @@ def init_wrapper_from_config(config_path):
     state_dict = torch.load(unet_ckpt_path, map_location='cpu')
     multiview_pipeline.unet.load_state_dict(state_dict, strict=True)
 
-    multiview_pipeline.to(multiview_device)
+    #multiview_pipeline.to(multiview_device)
     logger.warning(f"GPU memory allocated after load multiview model on {multiview_device}: {torch.cuda.memory_allocated(device=multiview_device) / 1024**3} GB")
 
     # load caption model
     logger.info('==> Loading caption model ...')
-    caption_device = config_['caption'].get('device', 'cpu')
-    caption_model = AutoModelForCausalLM.from_pretrained(config_['caption']['base_model'], \
-                    torch_dtype=torch.bfloat16, trust_remote_code=True).to(caption_device)
-    caption_processor = AutoProcessor.from_pretrained(config_['caption']['base_model'], trust_remote_code=True)
+    #caption_device = config_['caption'].get('device', 'cpu')
+    #caption_model = AutoModelForCausalLM.from_pretrained(config_['caption']['base_model'], \
+    #                torch_dtype=torch.bfloat16, trust_remote_code=True).to(caption_device)
+    #caption_processor = AutoProcessor.from_pretrained(config_['caption']['base_model'], trust_remote_code=True)
+    caption_model = None
+    caption_processor = None
     logger.warning(f"GPU memory allocated after load caption model on {caption_device}: {torch.cuda.memory_allocated(device=caption_device) / 1024**3} GB")
 
     # load reconstruction model
@@ -143,7 +145,7 @@ def init_wrapper_from_config(config_path):
     state_dict = torch.load(model_ckpt_path, map_location='cpu')['state_dict']
     state_dict = {k[14:]: v for k, v in state_dict.items() if k.startswith('lrm_generator.')}
     recon_model.load_state_dict(state_dict, strict=True)
-    recon_model.to(recon_device)
+    #recon_model.to(recon_device)
     recon_model.init_flexicubes_geometry(recon_device, fovy=50.0)
     recon_model.eval()
     logger.warning(f"GPU memory allocated after load reconstruction model on {recon_device}: {torch.cuda.memory_allocated(device=recon_device) / 1024**3} GB")
@@ -154,7 +156,7 @@ def init_wrapper_from_config(config_path):
         logger.info('==> Loading LLM ...')
         llm_device = llm_configs.get('device', 'cpu')
         llm, llm_tokenizer = load_llm_model(llm_configs['base_model'])
-        llm.to(llm_device)
+        #llm.to(llm_device)
         logger.warning(f"GPU memory allocated after load llm model on {llm_device}: {torch.cuda.memory_allocated(device=llm_device) / 1024**3} GB")
     else:
         llm, llm_tokenizer = None, None
@@ -259,7 +261,9 @@ class kiss3d_wrapper(object):
 
     def get_detailed_prompt(self, prompt, seed=None):
         if self.llm_model is not None:
+            self.llm_model.to('cuda')
             detailed_prompt = get_llm_response(self.llm_model, self.llm_tokenizer, prompt, seed=seed)
+            self.llm_model.to('cpu')
 
             logger.info(f"LLM refined prompt result: \"{detailed_prompt}\"")
             return detailed_prompt
